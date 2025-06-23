@@ -1,0 +1,172 @@
+{
+  "training_date": "2025-06-23T12:51:04.750897",
+  "models_directory": "integration_test_models",
+  "training_history": [
+    {
+      "model": "expense_categorizer",
+      "model_type": "naive_bayes",
+      "timestamp": "2025-06-23T12:51:02.972962",
+      "results": {
+        "accuracy": 0.3076923076923077,
+        "cv_mean_accuracy": 0.3572307692307692,
+        "cv_std_accuracy": 0.056839023181376166,
+        "classification_report": {
+          "Bills & Utilities": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 3.0
+          },
+          "Entertainment": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 3.0
+          },
+          "Food & Dining": {
+            "precision": 0.21052631578947367,
+            "recall": 1.0,
+            "f1-score": 0.34782608695652173,
+            "support": 4.0
+          },
+          "Gas": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 2.0
+          },
+          "Groceries": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 3.0
+          },
+          "Healthcare": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 2.0
+          },
+          "Income": {
+            "precision": 1.0,
+            "recall": 0.5,
+            "f1-score": 0.6666666666666666,
+            "support": 2.0
+          },
+          "Shopping": {
+            "precision": 0.6666666666666666,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.6666666666666666,
+            "support": 3.0
+          },
+          "Transportation": {
+            "precision": 0.5,
+            "recall": 0.25,
+            "f1-score": 0.3333333333333333,
+            "support": 4.0
+          },
+          "accuracy": 0.3076923076923077,
+          "macro avg": {
+            "precision": 0.26413255360623783,
+            "recall": 0.2685185185185185,
+            "f1-score": 0.22383252818035426,
+            "support": 26.0
+          },
+          "weighted avg": {
+            "precision": 0.2631578947368421,
+            "recall": 0.3076923076923077,
+            "f1-score": 0.23299888517279818,
+            "support": 26.0
+          }
+        },
+        "training_samples": 126,
+        "test_samples": 26
+      },
+      "model_path": "integration_test_models\\expense_categorizer_naive_bayes.pkl"
+    },
+    {
+      "model": "budget_predictor",
+      "model_type": "random_forest",
+      "timestamp": "2025-06-23T12:51:04.750897",
+      "results": {
+        "Food & Dining": {
+          "mae": 41.41754444444447,
+          "rmse": 53.33417808496628,
+          "r2_score": 0.8584205095015256,
+          "training_samples": 18,
+          "avg_prediction": 464.52338888888903,
+          "avg_actual": 455.0861111111111
+        },
+        "Shopping": {
+          "mae": 29.875627777777645,
+          "rmse": 36.78389511289016,
+          "r2_score": 0.8695738056905264,
+          "training_samples": 18,
+          "avg_prediction": 349.2438166666666,
+          "avg_actual": 347.8777777777778
+        },
+        "Transportation": {
+          "mae": 52.6834277777777,
+          "rmse": 62.955540847935815,
+          "r2_score": 0.7975105482934175,
+          "training_samples": 18,
+          "avg_prediction": 360.22586111111104,
+          "avg_actual": 355.0805555555555
+        },
+        "Entertainment": {
+          "mae": 14.881833333333336,
+          "rmse": 18.673729848848527,
+          "r2_score": 0.9239686031501624,
+          "training_samples": 18,
+          "avg_prediction": 211.06536666666665,
+          "avg_actual": 215.3977777777778
+        },
+        "Bills & Utilities": {
+          "mae": 45.51431666666659,
+          "rmse": 68.03596572372172,
+          "r2_score": 0.8622967608046799,
+          "training_samples": 18,
+          "avg_prediction": 532.3498055555557,
+          "avg_actual": 540.6188888888888
+        },
+        "Healthcare": {
+          "mae": 30.92346111111106,
+          "rmse": 43.395154708171,
+          "r2_score": 0.8808866196297274,
+          "training_samples": 18,
+          "avg_prediction": 326.0118611111111,
+          "avg_actual": 326.2872222222222
+        },
+        "Groceries": {
+          "mae": 54.62738333333331,
+          "rmse": 72.45648281543048,
+          "r2_score": 0.8421124525864909,
+          "training_samples": 18,
+          "avg_prediction": 530.3510277777779,
+          "avg_actual": 533.7105555555555
+        },
+        "Gas": {
+          "mae": 36.0008055555556,
+          "rmse": 43.64216949828717,
+          "r2_score": 0.8129154053969493,
+          "training_samples": 18,
+          "avg_prediction": 216.86028333333323,
+          "avg_actual": 223.70777777777778
+        },
+        "Other": {
+          "mae": 15.247938888888857,
+          "rmse": 20.335012353614747,
+          "r2_score": 0.8288494664189748,
+          "training_samples": 18,
+          "avg_prediction": 139.48675000000003,
+          "avg_actual": 139.70555555555558
+        }
+      },
+      "model_path": "integration_test_models\\budget_predictor_random_forest.pkl"
+    }
+  ],
+  "available_models": {
+    "expense_categorizer": true,
+    "budget_predictor": true
+  }
+}
