@@ -3,14 +3,24 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 import os
+import sys
 from datetime import datetime, timedelta
 import bcrypt
 import pandas as pd
 import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.pipeline import Pipeline
-import pickle
+
+# Add ml_models directory to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'ml_models'))
+
+# Import our advanced ML models
+try:
+    from model_trainer import FinanceMLTrainer
+    from data_processor import FinanceDataProcessor
+    ML_AVAILABLE = True
+    print("✅ ML modules imported successfully")
+except ImportError as e:
+    print(f"⚠️  ML modules not available: {e}")
+    ML_AVAILABLE = False
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -43,6 +53,7 @@ class Transaction(db.Model):
     description = db.Column(db.String(200), nullable=False)
     category = db.Column(db.String(50), nullable=True)
     predicted_category = db.Column(db.String(50), nullable=True)
+    confidence = db.Column(db.Float, nullable=True)
     date = db.Column(db.Date, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -53,92 +64,63 @@ class Budget(db.Model):
     amount = db.Column(db.Float, nullable=False)
     month = db.Column(db.Integer, nullable=False)
     year = db.Column(db.Integer, nullable=False)
+    predicted = db.Column(db.Boolean, default=False)
+    confidence = db.Column(db.String(20), nullable=True)
 
-# Simple ML Model for Expense Categorization
-class SimpleExpenseCategorizer:
+# Initialize ML Models
+ml_trainer = None
+data_processor = None
+
+# Fallback simple categorizer for when ML is not available
+class SimpleCategorizer:
     def __init__(self):
-        self.model = None
-        self.categories = [
-            'Food & Dining', 'Shopping', 'Transportation', 'Entertainment',
-            'Bills & Utilities', 'Healthcare', 'Education', 'Travel',
-            'Groceries', 'Gas', 'Income', 'Other'
-        ]
-        self.training_data = [
-            # Food & Dining
-            ('starbucks', 'Food & Dining'), ('mcdonalds', 'Food & Dining'),
-            ('pizza', 'Food & Dining'), ('restaurant', 'Food & Dining'),
-            ('cafe', 'Food & Dining'), ('coffee', 'Food & Dining'),
-            
-            # Shopping
-            ('amazon', 'Shopping'), ('target', 'Shopping'), ('walmart', 'Shopping'),
-            ('best buy', 'Shopping'), ('clothing', 'Shopping'), ('store', 'Shopping'),
-            
-            # Transportation
-            ('uber', 'Transportation'), ('gas station', 'Transportation'),
-            ('metro', 'Transportation'), ('parking', 'Transportation'),
-            ('car', 'Transportation'), ('fuel', 'Transportation'),
-            
-            # Entertainment
-            ('netflix', 'Entertainment'), ('movie', 'Entertainment'),
-            ('spotify', 'Entertainment'), ('game', 'Entertainment'),
-            ('concert', 'Entertainment'), ('theater', 'Entertainment'),
-            
-            # Bills & Utilities
-            ('electric', 'Bills & Utilities'), ('internet', 'Bills & Utilities'),
-            ('phone bill', 'Bills & Utilities'), ('water', 'Bills & Utilities'),
-            ('rent', 'Bills & Utilities'), ('utility', 'Bills & Utilities'),
-            
-            # Healthcare
-            ('pharmacy', 'Healthcare'), ('doctor', 'Healthcare'),
-            ('dental', 'Healthcare'), ('hospital', 'Healthcare'),
-            ('medicine', 'Healthcare'), ('health', 'Healthcare'),
-            
-            # Groceries
-            ('grocery', 'Groceries'), ('supermarket', 'Groceries'),
-            ('whole foods', 'Groceries'), ('market', 'Groceries'),
-            
-            # Transportation/Gas
-            ('shell', 'Gas'), ('exxon', 'Gas'), ('chevron', 'Gas'),
-            
-            # Income
-            ('salary', 'Income'), ('paycheck', 'Income'), ('deposit', 'Income'),
-        ]
-    
-    def train(self):
-        """Train a simple keyword-based categorizer"""
-        descriptions, categories = zip(*self.training_data)
-        
-        # Create TF-IDF pipeline
-        self.model = Pipeline([
-            ('tfidf', TfidfVectorizer(lowercase=True, stop_words='english')),
-            ('classifier', MultinomialNB())
-        ])
-        
-        self.model.fit(descriptions, categories)
-        print("Expense categorizer trained successfully!")
+        self.keywords = {
+            'Food & Dining': ['starbucks', 'coffee', 'restaurant', 'pizza', 'mcdonalds', 'food', 'dining'],
+            'Groceries': ['grocery', 'safeway', 'walmart', 'market', 'supermarket'],
+            'Transportation': ['uber', 'lyft', 'gas', 'fuel', 'parking', 'metro'],
+            'Shopping': ['amazon', 'target', 'store', 'shopping', 'mall'],
+            'Bills & Utilities': ['electric', 'water', 'internet', 'phone', 'utility', 'bill'],
+            'Entertainment': ['netflix', 'movie', 'theater', 'game', 'entertainment'],
+            'Healthcare': ['pharmacy', 'doctor', 'medical', 'hospital'],
+            'Income': ['salary', 'paycheck', 'deposit', 'income']
+        }
     
     def predict_category(self, description):
-        """Predict category for a transaction description"""
-        if self.model is None:
-            self.train()
+        if not description:
+            return {'category': 'Other', 'confidence': 0.5}
         
-        try:
-            prediction = self.model.predict([description.lower()])[0]
-            probabilities = self.model.predict_proba([description.lower()])[0]
-            confidence = max(probabilities)
-            
-            return {
-                'category': prediction,
-                'confidence': confidence
-            }
-        except:
-            return {
-                'category': 'Other',
-                'confidence': 0.5
-            }
+        desc_lower = description.lower()
+        for category, keywords in self.keywords.items():
+            for keyword in keywords:
+                if keyword in desc_lower:
+                    return {'category': category, 'confidence': 0.7}
+        
+        return {'category': 'Other', 'confidence': 0.5}
 
-# Initialize ML model
-categorizer = SimpleExpenseCategorizer()
+# Initialize categorizer
+fallback_categorizer = SimpleCategorizer()
+
+if ML_AVAILABLE:
+    print("🤖 Initializing ML models...")
+    try:
+        ml_trainer = FinanceMLTrainer(models_dir='models')
+        data_processor = FinanceDataProcessor()
+        
+        # Load or train models
+        try:
+            ml_trainer.load_models()
+            print("✅ ML models loaded successfully")
+        except Exception as e:
+            print(f"⚠️  Could not load models, training new ones: {e}")
+            try:
+                ml_trainer.train_all_models()
+                print("✅ New ML models trained successfully")
+            except Exception as e2:
+                print(f"❌ Failed to train models: {e2}")
+                ml_trainer = None
+    except Exception as e:
+        print(f"❌ ML initialization failed: {e}")
+        ml_trainer = None
 
 # Routes
 @app.route('/api/register', methods=['POST'])
@@ -184,30 +166,56 @@ def login():
 @app.route('/api/transactions', methods=['GET', 'POST'])
 @jwt_required()
 def transactions():
-    user_id = int(get_jwt_identity())  # Convert string back to int
+    user_id = int(get_jwt_identity())
     
     if request.method == 'POST':
         try:
             data = request.get_json()
             description = data.get('description')
+            amount = data.get('amount')
+            user_category = data.get('category')
             
-            # Predict category using ML if not provided
+            # Use advanced ML prediction if available, otherwise fallback
             predicted_category = None
-            if description and not data.get('category'):
-                try:
-                    prediction = categorizer.predict_category(description)
-                    predicted_category = prediction['category']
-                    print(f"Predicted category for '{description}': {predicted_category}")
-                except Exception as e:
-                    print(f"Error predicting category: {e}")
-                    predicted_category = 'Other'
+            confidence = None
+            
+            if description and not user_category:
+                if ml_trainer and ml_trainer.expense_categorizer:
+                    try:
+                        prediction = ml_trainer.predict_transaction_category(description)
+                        if 'error' not in prediction:
+                            predicted_category = prediction['category']
+                            confidence = prediction['confidence']
+                            print(f"🤖 AI Prediction: '{description}' → {predicted_category} ({confidence:.3f})")
+                        else:
+                            print(f"⚠️  ML prediction error: {prediction['error']}")
+                            # Fallback to simple categorizer
+                            fallback_pred = fallback_categorizer.predict_category(description)
+                            predicted_category = fallback_pred['category']
+                            confidence = fallback_pred['confidence']
+                    except Exception as e:
+                        print(f"❌ ML prediction failed: {e}")
+                        # Fallback to simple categorizer
+                        fallback_pred = fallback_categorizer.predict_category(description)
+                        predicted_category = fallback_pred['category']
+                        confidence = fallback_pred['confidence']
+                else:
+                    # Use fallback categorizer
+                    fallback_pred = fallback_categorizer.predict_category(description)
+                    predicted_category = fallback_pred['category']
+                    confidence = fallback_pred['confidence']
+                    print(f"🔧 Fallback Prediction: '{description}' → {predicted_category} ({confidence:.3f})")
+            
+            # Use user category if provided, otherwise use prediction
+            final_category = user_category or predicted_category or 'Other'
             
             transaction = Transaction(
                 user_id=user_id,
-                amount=data.get('amount'),
+                amount=amount,
                 description=description,
-                category=data.get('category') or predicted_category,
+                category=final_category,
                 predicted_category=predicted_category,
+                confidence=confidence,
                 date=datetime.strptime(data.get('date'), '%Y-%m-%d').date()
             )
             
@@ -216,8 +224,11 @@ def transactions():
             
             return jsonify({
                 'message': 'Transaction created successfully',
+                'transaction_id': transaction.id,
                 'predicted_category': predicted_category,
-                'transaction_id': transaction.id
+                'confidence': confidence,
+                'final_category': final_category,
+                'ml_used': ml_trainer is not None
             }), 201
             
         except Exception as e:
@@ -231,6 +242,7 @@ def transactions():
             'description': t.description,
             'category': t.category,
             'predicted_category': t.predicted_category,
+            'confidence': t.confidence,
             'date': t.date.isoformat(),
             'created_at': t.created_at.isoformat()
         } for t in transactions])
@@ -239,44 +251,80 @@ def transactions():
 @jwt_required()
 def predict_budget():
     try:
-        user_id = int(get_jwt_identity())  # Convert string back to int
+        user_id = int(get_jwt_identity())
         data = request.get_json()
         category = data.get('category')
         
-        # Get user's transactions for this category
-        transactions = Transaction.query.filter_by(
-            user_id=user_id, 
-            category=category
-        ).order_by(Transaction.date.desc()).limit(100).all()
+        # Get user's transactions
+        transactions = Transaction.query.filter_by(user_id=user_id).all()
         
-        if len(transactions) < 3:
+        if len(transactions) < 5:
             return jsonify({
                 'predicted_amount': 100,
                 'confidence': 'low',
-                'message': 'Not enough historical data'
+                'message': 'Not enough historical data (need at least 5 transactions)',
+                'method': 'default'
             })
         
-        # Calculate simple average and trend
-        amounts = [abs(t.amount) for t in transactions]
-        average = sum(amounts) / len(amounts)
+        # Use ML if available
+        if ml_trainer and ml_trainer.budget_predictor and data_processor:
+            try:
+                # Convert to DataFrame
+                transaction_data = [{
+                    'date': t.date,
+                    'amount': abs(t.amount),
+                    'category': t.category or 'Other',
+                    'description': t.description
+                } for t in transactions]
+                
+                df = data_processor.prepare_transaction_data(transaction_data)
+                
+                # Get prediction
+                if category:
+                    prediction = ml_trainer.predict_budget(df, category)
+                else:
+                    prediction = ml_trainer.predict_budget(df)
+                
+                return jsonify(prediction)
+            except Exception as e:
+                print(f"ML budget prediction error: {e}")
+                # Fallback to simple calculation
+                pass
         
-        # Simple prediction based on average
-        prediction = average * 1.1  # 10% increase for next month
+        # Fallback: Simple average calculation
+        if category:
+            category_transactions = [t for t in transactions if t.category == category]
+        else:
+            category_transactions = [t for t in transactions if t.amount < 0]  # Only expenses
+        
+        if not category_transactions:
+            return jsonify({
+                'predicted_amount': 100,
+                'confidence': 'low',
+                'message': 'No historical data for this category',
+                'method': 'fallback'
+            })
+        
+        # Calculate simple average
+        amounts = [abs(t.amount) for t in category_transactions]
+        avg_amount = sum(amounts) / len(amounts)
         
         return jsonify({
-            'predicted_amount': round(prediction, 2),
-            'confidence': 'high' if len(transactions) >= 10 else 'medium',
-            'historical_average': round(average, 2)
+            'predicted_amount': round(avg_amount * 1.1, 2),  # 10% increase
+            'confidence': 'medium',
+            'method': 'simple_average',
+            'historical_average': round(avg_amount, 2)
         })
         
     except Exception as e:
+        print(f"Budget prediction error: {e}")
         return jsonify({'error': str(e)}), 400
 
 @app.route('/api/insights', methods=['GET'])
 @jwt_required()
 def get_insights():
     try:
-        user_id = int(get_jwt_identity())  # Convert string back to int
+        user_id = int(get_jwt_identity())
         
         # Get recent transactions
         transactions = Transaction.query.filter_by(user_id=user_id).all()
@@ -284,52 +332,118 @@ def get_insights():
         if not transactions:
             return jsonify({'message': 'No transactions found'})
         
-        # Calculate insights
+        # Basic insights
         total_spending = sum(abs(t.amount) for t in transactions if t.amount < 0)
         total_income = sum(t.amount for t in transactions if t.amount > 0)
         
         # Category breakdown
         category_totals = {}
+        category_confidence = {}
+        
         for t in transactions:
             category = t.category or 'Other'
             if category not in category_totals:
                 category_totals[category] = 0
+                category_confidence[category] = []
+            
             category_totals[category] += abs(t.amount)
+            if t.confidence:
+                category_confidence[category].append(t.confidence)
         
-        # Find top category
+        # Calculate average confidence per category
+        avg_confidence = {}
+        for category, confidences in category_confidence.items():
+            if confidences:
+                avg_confidence[category] = sum(confidences) / len(confidences)
+            else:
+                avg_confidence[category] = 0.0
+        
+        # Top category
         top_category = max(category_totals.items(), key=lambda x: x[1])[0] if category_totals else None
+        
+        # Advanced insights using ML (if available)
+        advanced_insights = {}
+        if ml_trainer and len(transactions) >= 10:
+            try:
+                # Convert to DataFrame for ML analysis
+                transaction_data = [{
+                    'date': t.date,
+                    'amount': abs(t.amount),
+                    'category': t.category or 'Other',
+                    'description': t.description
+                } for t in transactions]
+                
+                df = data_processor.prepare_transaction_data(transaction_data)
+                
+                # Get budget predictions
+                budget_predictions = ml_trainer.predict_budget(df)
+                if 'error' not in budget_predictions:
+                    advanced_insights['next_month_budget'] = budget_predictions
+                
+            except Exception as e:
+                print(f"Advanced insights error: {e}")
+                advanced_insights['error'] = str(e)
         
         return jsonify({
             'total_spending': round(total_spending, 2),
             'total_income': round(total_income, 2),
             'net_amount': round(total_income - total_spending, 2),
             'category_breakdown': {k: round(v, 2) for k, v in category_totals.items()},
+            'category_confidence': {k: round(v, 3) for k, v in avg_confidence.items()},
             'top_category': top_category,
-            'transaction_count': len(transactions)
+            'transaction_count': len(transactions),
+            'ml_predictions_available': ml_trainer is not None,
+            'advanced_insights': advanced_insights
         })
         
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/api/ml/status', methods=['GET'])
+def ml_status():
+    """Get ML model status"""
+    if ml_trainer:
+        info = ml_trainer.get_model_info()
+        return jsonify({
+            'status': 'available',
+            'models': info,
+            'version': '2.0.0'
+        })
+    else:
+        return jsonify({
+            'status': 'unavailable',
+            'error': 'ML models not loaded',
+            'fallback_available': True
+        })
+
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({
         'status': 'healthy', 
-        'service': 'finance-tracker-api',
-        'timestamp': datetime.utcnow().isoformat()
+        'service': 'finance-tracker-api-ml',
+        'ml_available': ml_trainer is not None,
+        'timestamp': datetime.utcnow().isoformat(),
+        'version': '2.0.0'
     })
 
 @app.route('/', methods=['GET'])
 def home():
     return jsonify({
-        'message': 'Personal Finance Tracker API',
-        'version': '1.0.0',
+        'message': 'Personal Finance Tracker API with Advanced ML',
+        'version': '2.0.0',
+        'ml_features': [
+            'AI-powered expense categorization',
+            'Budget prediction',
+            'Spending insights',
+            'Fallback categorization'
+        ],
         'endpoints': [
             '/api/register',
             '/api/login', 
             '/api/transactions',
             '/api/budget/predict',
             '/api/insights',
+            '/api/ml/status',
             '/health'
         ]
     })
@@ -353,15 +467,10 @@ if __name__ == '__main__':
     # Initialize database
     init_db()
     
-    # Train ML model
-    try:
-        categorizer.train()
-    except Exception as e:
-        print(f"Warning: Could not train ML model: {e}")
-    
-    print("Starting Personal Finance Tracker API...")
+    print("🚀 Starting Personal Finance Tracker API with Advanced ML...")
     print("Available at: http://localhost:5000")
     print("Health check: http://localhost:5000/health")
+    print("ML Status: http://localhost:5000/api/ml/status")
     
     # Run the app
     app.run(debug=True, port=5000, host='0.0.0.0')

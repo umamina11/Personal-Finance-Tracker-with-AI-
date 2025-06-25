@@ -1,11 +1,11 @@
 {
-  "training_date": "2025-06-23T12:51:04.750897",
+  "training_date": "2025-06-25T11:53:35.217461",
   "models_directory": "integration_test_models",
   "training_history": [
     {
       "model": "expense_categorizer",
       "model_type": "naive_bayes",
-      "timestamp": "2025-06-23T12:51:02.972962",
+      "timestamp": "2025-06-25T11:53:33.650527",
       "results": {
         "accuracy": 0.3076923076923077,
         "cv_mean_accuracy": 0.3572307692307692,
@@ -87,79 +87,79 @@
     {
       "model": "budget_predictor",
       "model_type": "random_forest",
-      "timestamp": "2025-06-23T12:51:04.750897",
+      "timestamp": "2025-06-25T11:53:35.217461",
       "results": {
         "Food & Dining": {
-          "mae": 41.41754444444447,
-          "rmse": 53.33417808496628,
-          "r2_score": 0.8584205095015256,
+          "mae": 33.39028333333332,
+          "rmse": 45.068859910628866,
+          "r2_score": 0.8501238537963582,
           "training_samples": 18,
-          "avg_prediction": 464.52338888888903,
-          "avg_actual": 455.0861111111111
+          "avg_prediction": 465.84699444444465,
+          "avg_actual": 458.9861111111111
         },
         "Shopping": {
-          "mae": 29.875627777777645,
-          "rmse": 36.78389511289016,
-          "r2_score": 0.8695738056905264,
+          "mae": 24.69056111111108,
+          "rmse": 30.833943242174904,
+          "r2_score": 0.8658464262027707,
           "training_samples": 18,
-          "avg_prediction": 349.2438166666666,
-          "avg_actual": 347.8777777777778
+          "avg_prediction": 350.26077222222216,
+          "avg_actual": 347.87666666666667
         },
         "Transportation": {
-          "mae": 52.6834277777777,
-          "rmse": 62.955540847935815,
-          "r2_score": 0.7975105482934175,
+          "mae": 41.59515000000004,
+          "rmse": 55.68717230470494,
+          "r2_score": 0.7896627338809936,
           "training_samples": 18,
-          "avg_prediction": 360.22586111111104,
-          "avg_actual": 355.0805555555555
+          "avg_prediction": 359.7657833333335,
+          "avg_actual": 358.3327777777778
         },
         "Entertainment": {
-          "mae": 14.881833333333336,
-          "rmse": 18.673729848848527,
-          "r2_score": 0.9239686031501624,
+          "mae": 15.427072222222213,
+          "rmse": 20.138513808441182,
+          "r2_score": 0.9056689972823938,
           "training_samples": 18,
-          "avg_prediction": 211.06536666666665,
-          "avg_actual": 215.3977777777778
+          "avg_prediction": 214.36593888888893,
+          "avg_actual": 215.39777777777778
         },
         "Bills & Utilities": {
-          "mae": 45.51431666666659,
-          "rmse": 68.03596572372172,
-          "r2_score": 0.8622967608046799,
+          "mae": 56.34488333333323,
+          "rmse": 69.41480318604395,
+          "r2_score": 0.8837804118890756,
           "training_samples": 18,
-          "avg_prediction": 532.3498055555557,
+          "avg_prediction": 542.8978944444445,
           "avg_actual": 540.6188888888888
         },
         "Healthcare": {
-          "mae": 30.92346111111106,
-          "rmse": 43.395154708171,
-          "r2_score": 0.8808866196297274,
+          "mae": 28.277561111111012,
+          "rmse": 40.34676071763513,
+          "r2_score": 0.8930216294596408,
           "training_samples": 18,
-          "avg_prediction": 326.0118611111111,
-          "avg_actual": 326.2872222222222
+          "avg_prediction": 329.72113888888913,
+          "avg_actual": 326.28666666666663
         },
         "Groceries": {
-          "mae": 54.62738333333331,
-          "rmse": 72.45648281543048,
-          "r2_score": 0.8421124525864909,
+          "mae": 49.730088888889064,
+          "rmse": 69.81784321818392,
+          "r2_score": 0.8412905523650211,
           "training_samples": 18,
-          "avg_prediction": 530.3510277777779,
-          "avg_actual": 533.7105555555555
+          "avg_prediction": 528.0640555555553,
+          "avg_actual": 533.7094444444444
         },
         "Gas": {
-          "mae": 36.0008055555556,
-          "rmse": 43.64216949828717,
-          "r2_score": 0.8129154053969493,
+          "mae": 28.05383888888894,
+          "rmse": 32.81949951359381,
+          "r2_score": 0.8891134308259036,
           "training_samples": 18,
-          "avg_prediction": 216.86028333333323,
-          "avg_actual": 223.70777777777778
+          "avg_prediction": 227.3277611111111,
+          "avg_actual": 224.92
         },
         "Other": {
-          "mae": 15.247938888888857,
-          "rmse": 20.335012353614747,
-          "r2_score": 0.8288494664189748,
+          "mae": 16.24606666666661,
+          "rmse": 20.334970070928385,
+          "r2_score": 0.8359589343449205,
           "training_samples": 18,
-          "avg_prediction": 139.48675000000003,
-          "avg_actual": 139.70555555555558
+          "avg_prediction": 139.8285333333334,
+          "avg_actual": 139.705
         }
       },
       "model_path": "integration_test_models\\budget_predictor_random_forest.pkl"
