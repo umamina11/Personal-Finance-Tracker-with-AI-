@@ -1,0 +1,27 @@
+# Flask and Web Framework
+Flask==3.0.0
+Flask-CORS==4.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-JWT-Extended==4.6.0
+
+# Data Processing and Analysis
+pandas==2.1.4
+numpy==1.26.2
+
+# Machine Learning
+scikit-learn==1.3.2
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
+bcrypt==4.1.2
+
+# Optional: Advanced ML (comment out if you have issues)
+# tensorflow==2.18.0
+
+# Optional: Financial APIs (comment out if not using)
+# plaid-python==12.0.0
+
+# Development and Testing (optional)
+# pytest==7.4.3
+# pytest-flask==1.3.0
